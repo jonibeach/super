@@ -33,17 +33,19 @@ impl<'a> HttpInner<'a> {
             .iter()
             .enumerate()
             .find_map(|(i, b)| if *b == b'.' { Some(i) } else { None })
-            .context("Version string doesn't contain '.'")?;
+            .with_context(|| "Version string doesn't contain '.'")?;
 
         let (major_bytes, minor_bytes) = ver_line.split_at(sep_idx);
         let (major_str, minor_str) = (
-            core::str::from_utf8(major_bytes).context(format!(
-                "Cannot parse major version from bytes {major_bytes:?}"
-            ))?,
-            core::str::from_utf8(&minor_bytes[1..]).context(format!(
-                "Cannot parse minor version from bytes {:?}",
-                &minor_bytes[1..]
-            ))?,
+            core::str::from_utf8(major_bytes).with_context(|| {
+                format!("Cannot parse major version from bytes {major_bytes:?}")
+            })?,
+            core::str::from_utf8(&minor_bytes[1..]).with_context(|| {
+                format!(
+                    "Cannot parse minor version from bytes {:?}",
+                    &minor_bytes[1..]
+                )
+            })?,
         );
 
         let (major_str, minor_str) = (major_str.trim(), minor_str.trim());
@@ -51,23 +53,22 @@ impl<'a> HttpInner<'a> {
         let (major_ver, minor_ver) = (
             major_str
                 .parse()
-                .context(format!("Cannot parse major version from str '{major_str}'"))?,
+                .with_context(|| format!("Cannot parse major version from str '{major_str}'"))?,
             minor_str
                 .parse()
-                .context(format!("Cannot parse minor version from str '{minor_str}'"))?,
+                .with_context(|| format!("Cannot parse minor version from str '{minor_str}'"))?,
         );
 
         let mut headers = HashMap::new();
 
         for l in &lines[1..lines.len() - 2] {
-            let str = core::str::from_utf8(l).context(format!(
-                "Header line '{}' is not utf8.",
-                String::from_utf8_lossy(l)
-            ))?;
+            let str = core::str::from_utf8(l).with_context(|| {
+                format!("Header line '{}' is not utf8.", String::from_utf8_lossy(l))
+            })?;
 
             let (header, value) = str
                 .split_once(":")
-                .context(format!("Header line {} doesn't contain ':'", str))?;
+                .with_context(|| format!("Header line {} doesn't contain ':'", str))?;
 
             headers.insert(header.trim(), value.trim());
         }

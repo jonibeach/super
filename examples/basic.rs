@@ -1,4 +1,4 @@
-use super::{
+use super_http::{
     res::{HttpRes, StatusCode},
     HttpServer,
 };
